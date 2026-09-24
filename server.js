@@ -503,18 +503,36 @@ const server = http.createServer(async (req, res) => {
         return sendJson(200, { success: true });
       }
 
-      // Статистика дашборда
+      // Статистика дашборда (с разбивкой по периодам: сегодня, месяц, все время)
       if (method === 'GET' && pathname === '/api/admin/stats') {
         const totalProducts = db.prepare('SELECT COUNT(*) as count FROM products').get().count;
         const totalOrders = db.prepare('SELECT COUNT(*) as count FROM orders').get().count;
         const totalRevenue = db.prepare('SELECT COALESCE(SUM(total_price), 0) as sum FROM orders').get().sum;
         const newOrders = db.prepare("SELECT COUNT(*) as count FROM orders WHERE status = 'Новый'").get().count;
 
+        // Заказы и выручка за сегодня
+        const todayStats = db.prepare(`
+          SELECT COUNT(*) as count, COALESCE(SUM(total_price), 0) as sum
+          FROM orders
+          WHERE date(created_at, 'localtime') = date('now', 'localtime')
+        `).get();
+
+        // Заказы и выручка за текущий месяц
+        const monthStats = db.prepare(`
+          SELECT COUNT(*) as count, COALESCE(SUM(total_price), 0) as sum
+          FROM orders
+          WHERE strftime('%Y-%m', created_at, 'localtime') = strftime('%Y-%m', 'now', 'localtime')
+        `).get();
+
         return sendJson(200, {
           totalProducts,
           totalOrders,
           totalRevenue,
-          newOrders
+          newOrders,
+          todayOrders: todayStats.count,
+          todayRevenue: todayStats.sum,
+          monthOrders: monthStats.count,
+          monthRevenue: monthStats.sum
         });
       }
 
@@ -577,9 +595,23 @@ const server = http.createServer(async (req, res) => {
         return sendJson(200, { success: true });
       }
 
-      // Список всех заказов
+      // Список заказов (с поддержкой периодов: all, today, yesterday, week, month)
       if (method === 'GET' && pathname === '/api/admin/orders') {
-        const orders = db.prepare('SELECT * FROM orders ORDER BY id DESC').all();
+        const period = parsedUrl.searchParams.get('period') || 'all';
+        let query = 'SELECT * FROM orders';
+
+        if (period === 'today') {
+          query += " WHERE date(created_at, 'localtime') = date('now', 'localtime')";
+        } else if (period === 'yesterday') {
+          query += " WHERE date(created_at, 'localtime') = date('now', 'localtime', '-1 day')";
+        } else if (period === 'week') {
+          query += " WHERE date(created_at, 'localtime') >= date('now', 'localtime', '-7 days')";
+        } else if (period === 'month') {
+          query += " WHERE strftime('%Y-%m', created_at, 'localtime') = strftime('%Y-%m', 'now', 'localtime')";
+        }
+
+        query += ' ORDER BY id DESC';
+        const orders = db.prepare(query).all();
         const ordersFormatted = orders.map(o => {
           let items = [];
           try {
@@ -588,6 +620,19 @@ const server = http.createServer(async (req, res) => {
           return { ...o, items };
         });
         return sendJson(200, { orders: ordersFormatted });
+      }
+
+      // Очистить ВСЕ заказы (обнуляет историю и общий баланс проданных товаров)
+      if (method === 'DELETE' && pathname === '/api/admin/orders') {
+        db.exec('DELETE FROM orders');
+        return sendJson(200, { success: true, message: 'Все заказы удалены, баланс обнулен' });
+      }
+
+      // Удалить отдельный заказ по ID
+      if (method === 'DELETE' && pathname.startsWith('/api/admin/orders/')) {
+        const id = parseInt(pathname.split('/')[4], 10);
+        db.prepare('DELETE FROM orders WHERE id = ?').run(id);
+        return sendJson(200, { success: true, message: 'Заказ успешно удален' });
       }
 
       // Изменить статус заказа
