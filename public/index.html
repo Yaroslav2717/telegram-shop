@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Каталог Премиум Товаров 18+</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+  <!-- Telegram WebApp SDK для запуска магазина внутри Telegram -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+  <!-- ============================================== -->
+  <!-- AGE-GATE (ПРОВЕРКА ВОЗРАСТА 18+)               -->
+  <!-- ============================================== -->
+  <div id="ageGateOverlay" class="age-gate-overlay">
+    <div class="age-gate-card">
+      <div id="agePromptBox" class="age-prompt-box">
+        <div class="age-gate-badge">18+</div>
+        <h2 class="age-gate-title">Вам есть 18 лет?</h2>
+        <p class="age-gate-desc">
+          Данный сайт содержит информацию и товары, предназначенные исключительно для совершеннолетних пользователей. Подтвердите, что вам исполнилось 18 лет, чтобы получить доступ к каталогу.
+        </p>
+        <div class="age-gate-buttons">
+          <button id="btnAgeYes" class="age-btn-yes" type="button">
+            ✅ Да, мне есть 18 лет
+          </button>
+          <button id="btnAgeNo" class="age-btn-no" type="button">
+            ❌ Нет, мне меньше 18
+          </button>
+        </div>
+      </div>
+
+      <!-- Экран при выборе "Нет" -->
+      <div id="ageBlockedBox" class="age-blocked-box">
+        <div class="age-gate-badge" style="border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.2);">⛔</div>
+        <h2 class="age-gate-title" style="color: #ef4444;">Доступ запрещен</h2>
+        <p class="age-gate-desc">
+          К сожалению, вы не можете просматривать каталог. Продажа и демонстрация товаров лицам младше 18 лет строго запрещены.
+        </p>
+        <div class="age-gate-buttons">
+          <button id="btnAgeRetry" class="age-btn-no" style="border-color: var(--accent); color: var(--accent);" type="button">
+            🔄 Я нажал случайно (мне есть 18)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ШАПКА САЙТА -->
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">
+        <span>EXCLUSIVE</span>
+        <span class="logo-badge">18+</span>
+      </a>
+
+      <!-- Поиск товаров -->
+      <div class="header-search">
+        <span class="header-search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Поиск по каталогу...">
+      </div>
+
+      <!-- Кнопки действий -->
+      <div class="header-actions">
+        <button id="cartOpenBtn" class="cart-btn" type="button" aria-label="Открыть корзину">
+          <span>🛒 Корзина</span>
+          <span id="cartCountBadge" class="cart-count">0</span>
+        </button>
+
+        <a href="/admin" class="admin-link-btn" title="Панель администратора">
+          ⚙️ <span>Админка</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- БАННЕР / HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">🔒 Только для совершеннолетних</div>
+      <h1>Каталог эксклюзивных товаров</h1>
+      <p>Оригинальные аксессуары, подарочные сеты и коллекционные вещи с быстрой доставкой и подтверждением заказа через Telegram</p>
+    </div>
+  </section>
+
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <main class="main-container">
+    <!-- Фильтр по категориям -->
+    <div id="categoriesBar" class="categories-bar">
+      <button class="cat-chip active" data-category="Все">Все товары</button>
+    </div>
+
+    <!-- Сетка товаров -->
+    <div id="catalogGrid" class="catalog-grid">
+      <!-- Динамически заполняется через app.js -->
+    </div>
+  </main>
+
+  <!-- ============================================== -->
+  <!-- БОКОВАЯ КОРЗИНА (DRAWER)                       -->
+  <!-- ============================================== -->
+  <div id="cartDrawerOverlay" class="cart-drawer-overlay"></div>
+  <aside id="cartDrawer" class="cart-drawer" aria-label="Корзина покупок">
+    <div class="cart-drawer-header">
+      <h2>🛒 Корзина товаров</h2>
+      <button id="cartCloseBtn" class="close-btn" type="button">&times;</button>
+    </div>
+
+    <div id="cartItemsList" class="cart-items-list">
+      <!-- Список позиций в корзине -->
+    </div>
+
+    <div class="cart-drawer-footer">
+      <div class="cart-total-row">
+        <span class="cart-total-label">Итого к оплате:</span>
+        <span id="cartTotalSum" class="cart-total-value">0 ₽</span>
+      </div>
+      <button id="openCheckoutModalBtn" class="checkout-btn" type="button">
+        Оформить заказ
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============================================== -->
+  <!-- МОДАЛЬНОЕ ОКНО ОФОРМЛЕНИЯ ЗАКАЗА               -->
+  <!-- ============================================== -->
+  <div id="checkoutModalOverlay" class="checkout-modal-overlay">
+    <div class="checkout-card">
+      <div class="checkout-header">
+        <h3 style="font-size: 20px; font-weight: 700;">📦 Оформление заказа</h3>
+        <button id="closeCheckoutModalBtn" class="close-btn" type="button">&times;</button>
+      </div>
+
+      <div class="form-notice">
+        ⚡ Детали заказа мгновенно поступят менеджеру в наш <b>Telegram-бот</b> для связи с вами.
+      </div>
+
+      <form id="checkoutForm">
+        <div class="form-group">
+          <label for="custName">Ваше имя *</label>
+          <input type="text" id="custName" placeholder="Например: Иван Иванов" required>
+        </div>
+
+        <div class="form-group">
+          <label for="custPhone">Телефон или Telegram никнейм *</label>
+          <input type="text" id="custPhone" placeholder="+7 (999) 000-00-00 или @username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="custComment">Адрес доставки или комментарий</label>
+          <textarea id="custComment" rows="3" placeholder="Укажите город, улицу или пожелания к доставке..."></textarea>
+        </div>
+
+        <div style="background: var(--bg-card); padding: 14px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px;">
+            <span>Сумма заказа:</span>
+            <span id="checkoutTotalSum" style="color: var(--accent);">0 ₽</span>
+          </div>
+        </div>
+
+        <button id="submitOrderBtn" class="checkout-btn" type="submit">
+          Подтвердить и отправить заказ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ТОВАРА                  -->
+  <!-- ============================================== -->
+  <div id="productModalOverlay" class="checkout-modal-overlay">
+    <div class="checkout-card" style="max-width: 600px;">
+      <div class="checkout-header">
+        <span id="modalProdCategory" class="hero-tag" style="margin: 0;">Категория</span>
+        <button id="closeProductModalBtn" class="close-btn" type="button">&times;</button>
+      </div>
+
+      <div style="height: 280px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background: #0f172a;">
+        <img id="modalProdImage" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+
+      <h2 id="modalProdTitle" style="font-size: 22px; margin-bottom: 12px; line-height: 1.3;">Название товара</h2>
+      <p id="modalProdDesc" style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6;">Описание товара...</p>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border);">
+        <div id="modalProdPrice" style="font-size: 24px; font-weight: 800; color: var(--text-main);">0 ₽</div>
+        <button id="modalAddToCartBtn" class="cart-btn" type="button">
+          🛒 Добавить в корзину
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- МОДАЛКА УСПЕШНОГО ЗАКАЗА                       -->
+  <!-- ============================================== -->
+  <div id="orderSuccessModal" class="checkout-modal-overlay">
+    <div class="checkout-card success-modal" style="max-width: 440px;">
+      <div class="success-icon">✓</div>
+      <h3 style="font-size: 22px; margin-bottom: 8px;">Заказ успешно принят!</h3>
+      <p style="color: var(--text-muted); font-size: 14px;">
+        Спасибо за покупку. Менеджер свяжется с вами в ближайшее время.
+      </p>
+
+      <div class="order-badge-info">
+        <div>Номер заказа: <b id="successOrderId" style="color: var(--accent);">#000</b></div>
+        <div id="successTelegramStatus" style="font-size: 13px; margin-top: 6px; color: var(--success);">
+          ✈️ Уведомление отправлено в Telegram
+        </div>
+      </div>
+
+      <button id="successOkBtn" class="checkout-btn" type="button">
+        Вернуться к покупкам
+      </button>
+    </div>
+  </div>
+
+  <!-- ПОДВАЛ САЙТА -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>© 2026 Эксклюзивный каталог товаров. Все права защищены. Строго 18+.</p>
+      <p>Сайт интегрирован с автоматической диспетчеризацией заказов в Telegram Bot.</p>
+      <button id="resetAgeBtn" class="reset-age-link" type="button">
+        Сбросить подтверждение возраста (проверить работу Age-Gate)
+      </button>
+    </div>
+  </footer>
+
+  <!-- Контейнер для всплывающих уведомлений -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
