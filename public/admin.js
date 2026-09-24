@@ -144,7 +144,7 @@ async function loadStats() {
 
     document.getElementById('statProducts').textContent = stats.totalProducts;
     document.getElementById('statOrders').textContent = stats.totalOrders;
-    document.getElementById('statRevenue').textContent = `${stats.totalRevenue.toLocaleString('ru-RU')} ₽`;
+    document.getElementById('statRevenue').textContent = `${stats.totalRevenue.toLocaleString('pl-PL')} zł`;
     document.getElementById('statNewOrders').textContent = stats.newOrders;
 
     const badge = document.getElementById('newOrdersBadge');
@@ -197,7 +197,7 @@ function renderProductsTable(products) {
         <div style="font-size: 12px; color: var(--admin-muted);">${escapeHtml((p.description || '').substring(0, 60))}...</div>
       </td>
       <td><span class="badge" style="background: rgba(255,255,255,0.06);">${escapeHtml(p.category || 'Общее')}</span></td>
-      <td style="font-weight: 700;">${p.price.toLocaleString('ru-RU')} ₽</td>
+      <td style="font-weight: 700;">${p.price.toLocaleString('pl-PL')} zł</td>
       <td>
         <span class="badge ${p.is_active ? 'badge-done' : 'badge-cancel'}">
           ${p.is_active ? 'Активен' : 'Скрыт'}
@@ -448,10 +448,10 @@ function renderOrdersTable(orders) {
   orders.forEach(ord => {
     const tr = document.createElement('tr');
     const itemsListHtml = (ord.items || []).map(i =>
-      `<div>• <b>${escapeHtml(i.title)}</b> (${i.quantity} шт. × ${i.price.toLocaleString('ru-RU')} ₽)</div>`
+      `<div>• <b>${escapeHtml(i.title)}</b> (${i.quantity} шт. × ${i.price.toLocaleString('pl-PL')} zł)</div>`
     ).join('');
 
-    const dateFormatted = new Date(ord.created_at).toLocaleString('ru-RU');
+    const dateFormatted = new Date(ord.created_at).toLocaleString('pl-PL');
 
     tr.innerHTML = `
       <td><b>#${ord.id}</b></td>
@@ -462,7 +462,7 @@ function renderOrdersTable(orders) {
         ${ord.customer_comment ? `<div style="font-size: 11px; color: var(--admin-muted); margin-top: 4px;">💬 ${escapeHtml(ord.customer_comment)}</div>` : ''}
       </td>
       <td style="font-size: 12px; max-width: 320px;">${itemsListHtml}</td>
-      <td style="font-weight: 800; font-size: 15px; color: var(--admin-text);">${ord.total_price.toLocaleString('ru-RU')} ₽</td>
+      <td style="font-weight: 800; font-size: 15px; color: var(--admin-text);">${ord.total_price.toLocaleString('pl-PL')} zł</td>
       <td>
         <select class="order-status-select form-field" data-id="${ord.id}" style="padding: 6px 10px; font-size: 12px; margin-bottom: 0;">
           <option value="Новый" ${ord.status === 'Новый' ? 'selected' : ''}>🔵 Новый</option>

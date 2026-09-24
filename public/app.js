@@ -184,7 +184,7 @@ function renderProductGrid() {
         <h3 class="product-title" data-id="${prod.id}">${escapeHtml(prod.title)}</h3>
         <p class="product-description">${escapeHtml(prod.description || '')}</p>
         <div class="product-bottom">
-          <div class="product-price">${prod.price.toLocaleString('ru-RU')} <span>₽</span></div>
+          <div class="product-price">${prod.price.toLocaleString('pl-PL')} <span>zł</span></div>
           <button class="add-cart-btn" data-id="${prod.id}" type="button">
             🛒 В корзину
           </button>
@@ -234,7 +234,7 @@ function openProductModal(product) {
   cat.textContent = product.category || 'Товар';
   title.textContent = product.title;
   desc.textContent = product.description || 'Описание отсутствует.';
-  price.textContent = `${product.price.toLocaleString('ru-RU')} ₽`;
+  price.textContent = `${product.price.toLocaleString('pl-PL')} zł`;
 
   overlay.classList.add('open');
 }
@@ -301,9 +301,9 @@ function renderCart() {
   const totalPrice = state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   badge.textContent = totalCount;
-  totalElem.textContent = `${totalPrice.toLocaleString('ru-RU')} ₽`;
+  totalElem.textContent = `${totalPrice.toLocaleString('pl-PL')} zł`;
   if (checkoutTotalElem) {
-    checkoutTotalElem.textContent = `${totalPrice.toLocaleString('ru-RU')} ₽`;
+    checkoutTotalElem.textContent = `${totalPrice.toLocaleString('pl-PL')} zł`;
   }
 
   if (state.cart.length === 0) {
@@ -327,7 +327,7 @@ function renderCart() {
       <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.title)}" class="cart-item-img">
       <div class="cart-item-details">
         <div class="cart-item-title">${escapeHtml(item.title)}</div>
-        <div class="cart-item-price">${(item.price * item.quantity).toLocaleString('ru-RU')} ₽</div>
+        <div class="cart-item-price">${(item.price * item.quantity).toLocaleString('pl-PL')} zł</div>
         <div class="cart-item-controls">
           <button class="qty-btn" type="button" data-action="minus" data-id="${item.id}">−</button>
           <span class="qty-val">${item.quantity}</span>
