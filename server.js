@@ -77,42 +77,42 @@ if (productCount === 0) {
     {
       title: 'Премиальный крафтовый набор «Noir Reserve»',
       description: 'Эксклюзивная подборка для истинных ценителей. Включает подарочный бокс, аксессуары из натурального дерева и фирменную гравировку.',
-      price: 4990,
+      price: 199,
       category: 'Наборы',
       image_url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'
     },
     {
       title: 'Винтажный механический хронограф «Aero 1974»',
       description: 'Сапфировое стекло, стальной корпус 41мм, японский мануфактурный калибр. Водонепроницаемость 10 ATM.',
-      price: 18500,
+      price: 749,
       category: 'Часы & Аксессуары',
       image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80'
     },
     {
       title: 'Кожаный дорожный несессер «Gentleman Traveler»',
       description: 'Натуральная итальянская кожа ручной выделки. Вместительные отделения для гигиенических принадлежностей и аксессуаров.',
-      price: 6200,
+      price: 249,
       category: 'Кожаные изделия',
       image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80'
     },
     {
       title: 'Коллекционная зажигалка «Titan Brass»',
       description: 'Массивная латунная бензиновая зажигалка с винтажной текстурой и гравировкой. Ветроустойчивое пламя.',
-      price: 3400,
+      price: 139,
       category: 'Аксессуары',
       image_url: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=800&q=80'
     },
     {
       title: 'Набор дегустационных бокалов «Glencairn Crystal»',
       description: 'Кристально чистое стекло особой формы для полного раскрытия аромата благородных напитков. В наборе 2 шт.',
-      price: 3900,
+      price: 159,
       category: 'Бар & Посуда',
       image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80'
     },
     {
       title: 'Хьюмидор из кедра «Havana Classic»',
       description: 'Внутренняя отделка из испанского кедра, точный аналоговый гигрометр, золоченая фурнитура. Вместимость до 25 шт.',
-      price: 9800,
+      price: 399,
       category: 'Наборы',
       image_url: 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80'
     }
@@ -126,7 +126,10 @@ if (productCount === 0) {
   for (const prod of demoProducts) {
     insertStmt.run(prod.title, prod.description, prod.price, prod.category, prod.image_url);
   }
-  console.log(`[DB] Добавлено ${demoProducts.length} демонстрационных товаров.`);
+  console.log(`[DB] Добавлено ${demoProducts.length} демонстрационных товаров (в злотых).`);
+} else {
+  // Конвертация существующих старых рублевых цен в злотые (если > 1000)
+  db.exec("UPDATE products SET price = ROUND(price / 25) WHERE price > 1000;");
 }
 
 // Активные сессии админов
@@ -250,12 +253,12 @@ startTelegramBotListener();
 // Форматирование заказа в HTML-сообщение для Telegram
 function formatOrderForTelegram(order, items) {
   const itemsText = items.map((item, index) => {
-    const lineTotal = (item.price * item.quantity).toLocaleString('ru-RU');
-    return `${index + 1}. <b>${escapeHtml(item.title)}</b>\n   └ ${item.quantity} шт. × ${item.price.toLocaleString('ru-RU')} ₽ = <b>${lineTotal} ₽</b>`;
+    const lineTotal = (item.price * item.quantity).toLocaleString('pl-PL');
+    return `${index + 1}. <b>${escapeHtml(item.title)}</b>\n   └ ${item.quantity} шт. × ${item.price.toLocaleString('pl-PL')} zł = <b>${lineTotal} zł</b>`;
   }).join('\n');
 
-  const formattedDate = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-  const totalFormatted = order.total_price.toLocaleString('ru-RU');
+  const formattedDate = new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' });
+  const totalFormatted = order.total_price.toLocaleString('pl-PL');
 
   return `🔥 <b>НОВЫЙ ЗАКАЗ #${order.id}</b>
 ━━━━━━━━━━━━━━━━━━
@@ -266,8 +269,8 @@ function formatOrderForTelegram(order, items) {
 🛒 <b>Состав заказа:</b>
 ${itemsText}
 ━━━━━━━━━━━━━━━━━━
-💰 <b>ИТОГО К ОПЛАТЕ: ${totalFormatted} ₽</b>
-🕒 <i>${formattedDate} (МСК)</i>`;
+💰 <b>ИТОГО К ОПЛАТЕ: ${totalFormatted} zł</b>
+🕒 <i>${formattedDate}</i>`;
 }
 
 function escapeHtml(str) {
