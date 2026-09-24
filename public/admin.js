@@ -10,6 +10,7 @@ const adminState = {
   token: localStorage.getItem('admin_token') || '',
   products: [],
   orders: [],
+  ordersPeriod: 'all',
   currentTab: 'products'
 };
 
@@ -144,8 +145,19 @@ async function loadStats() {
 
     document.getElementById('statProducts').textContent = stats.totalProducts;
     document.getElementById('statOrders').textContent = stats.totalOrders;
-    document.getElementById('statRevenue').textContent = `${stats.totalRevenue.toLocaleString('pl-PL')} zł`;
+    document.getElementById('statRevenue').textContent = `${(stats.totalRevenue || 0).toLocaleString('pl-PL')} zł`;
     document.getElementById('statNewOrders').textContent = stats.newOrders;
+
+    // Разбивка по периодам
+    const revBreakdown = document.getElementById('statRevenueBreakdown');
+    if (revBreakdown) {
+      revBreakdown.textContent = `Сегодня: ${(stats.todayRevenue || 0).toLocaleString('pl-PL')} zł • Месяц: ${(stats.monthRevenue || 0).toLocaleString('pl-PL')} zł`;
+    }
+
+    const ordBreakdown = document.getElementById('statOrdersBreakdown');
+    if (ordBreakdown) {
+      ordBreakdown.textContent = `Сегодня: ${stats.todayOrders || 0} • Месяц: ${stats.monthOrders || 0}`;
+    }
 
     const badge = document.getElementById('newOrdersBadge');
     if (stats.newOrders > 0) {
@@ -412,27 +424,68 @@ async function deleteProduct(id, title) {
 }
 
 // ====================================================
-// УПРАВЛЕНИЕ ЗАКАЗАМИ
+// УПРАВЛЕНИЕ ЗАКАЗАМИ И ИСТОРИЕЙ
 // ====================================================
 function initOrdersView() {
+  // Кнопка обновления
   document.getElementById('refreshOrdersBtn').addEventListener('click', () => {
     loadOrders();
     loadStats();
     showToast('Список заказов обновлен', 'info');
   });
+
+  // Фильтры истории по периодам (все время, сегодня, вчера, 7 дней, месяц)
+  const periodChips = document.querySelectorAll('.order-period-chip');
+  periodChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      periodChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      adminState.ordersPeriod = chip.getAttribute('data-period') || 'all';
+      loadOrders();
+    });
+  });
+
+  // Кнопка полной очистки заказов и обнуления баланса
+  document.getElementById('clearAllOrdersBtn').addEventListener('click', async () => {
+    const confirmed = confirm(
+      '⚠️ ВНИМАНИЕ: Вы действительно хотите очистить ВСЕ заказы?\n\n' +
+      '• Вся история заказов будет полностью удалена.\n' +
+      '• Общий баланс проданных товаров обнулится до 0 zł.\n\n' +
+      'Продолжить?'
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Все заказы удалены, общий баланс продаж обнулен!', 'success');
+        loadOrders();
+        loadStats();
+      } else {
+        showToast(data.error || 'Ошибка очистки заказов', 'error');
+      }
+    } catch (err) {
+      showToast('Ошибка при связи с сервером', 'error');
+    }
+  });
 }
 
 async function loadOrders() {
   const tbody = document.getElementById('adminOrdersTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 24px;">Загрузка заказов...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px;">Загрузка заказов...</td></tr>';
 
   try {
-    const res = await fetch('/api/admin/orders', { headers: getAuthHeaders() });
+    const period = adminState.ordersPeriod || 'all';
+    const res = await fetch(`/api/admin/orders?period=${encodeURIComponent(period)}`, { headers: getAuthHeaders() });
     const data = await res.json();
     adminState.orders = data.orders || [];
     renderOrdersTable(adminState.orders);
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: #ef4444; padding: 24px;">Ошибка загрузки заказов</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: #ef4444; padding: 24px;">Ошибка загрузки заказов</td></tr>';
   }
 }
 
@@ -441,7 +494,15 @@ function renderOrdersTable(orders) {
   tbody.innerHTML = '';
 
   if (orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--admin-muted);">Пока нет оформленных заказов.</td></tr>';
+    const periodNames = {
+      all: 'за все время',
+      today: 'за сегодня',
+      yesterday: 'за вчера',
+      week: 'за последние 7 дней',
+      month: 'за этот месяц'
+    };
+    const periodText = periodNames[adminState.ordersPeriod] || '';
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--admin-muted);">Нет оформленных заказов ${periodText}.</td></tr>`;
     return;
   }
 
@@ -471,6 +532,9 @@ function renderOrdersTable(orders) {
           <option value="Отменен" ${ord.status === 'Отменен' ? 'selected' : ''}>🔴 Отменен</option>
         </select>
       </td>
+      <td style="text-align: right;">
+        <button class="btn-danger del-order-row-btn" data-id="${ord.id}" title="Удалить этот заказ" style="padding: 6px 10px;">🗑️</button>
+      </td>
     `;
 
     // Слушатель смены статуса
@@ -491,6 +555,29 @@ function renderOrdersTable(orders) {
         }
       } catch (e) {
         showToast('Ошибка сервера при смене статуса', 'error');
+      }
+    });
+
+    // Слушатель удаления отдельного заказа
+    const delBtn = tr.querySelector('.del-order-row-btn');
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`Удалить заказ #${ord.id} от клиента ${ord.customer_name}?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/orders/${ord.id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast(`Заказ #${ord.id} удален`, 'info');
+          loadOrders();
+          loadStats();
+        } else {
+          showToast('Не удалось удалить заказ', 'error');
+        }
+      } catch (err) {
+        showToast('Ошибка при удалении заказа', 'error');
       }
     });
 

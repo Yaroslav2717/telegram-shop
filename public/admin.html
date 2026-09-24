@@ -81,17 +81,19 @@
           </div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);">💰</div>
+          <div>
+            <div class="stat-title">Общий баланс продаж</div>
+            <div id="statRevenue" class="stat-value">0 zł</div>
+            <div id="statRevenueBreakdown" style="font-size: 11px; color: var(--admin-muted); margin-top: 2px;">Сегодня: 0 zł • Месяц: 0 zł</div>
+          </div>
+        </div>
+        <div class="stat-card">
           <div class="stat-icon" style="color: #38bdf8; background: rgba(56,189,248,0.1);">🛒</div>
           <div>
             <div class="stat-title">Всего заказов</div>
             <div id="statOrders" class="stat-value">0</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);">💰</div>
-          <div>
-            <div class="stat-title">Сумма всех заказов</div>
-            <div id="statRevenue" class="stat-value">0 zł</div>
+            <div id="statOrdersBreakdown" style="font-size: 11px; color: var(--admin-muted); margin-top: 2px;">Сегодня: 0 • Месяц: 0</div>
           </div>
         </div>
         <div class="stat-card">
@@ -99,6 +101,7 @@
           <div>
             <div class="stat-title">Новых заказов</div>
             <div id="statNewOrders" class="stat-value">0</div>
+            <div style="font-size: 11px; color: var(--admin-muted); margin-top: 2px;">Требуют обработки</div>
           </div>
         </div>
       </section>
@@ -137,22 +140,40 @@
       <!-- ВКЛАДКА 2: ЗАКАЗЫ -->
       <section id="tab-orders" class="tab-pane hidden">
         <div class="admin-section-header">
-          <h2>Список заказов клиентов</h2>
-          <button id="refreshOrdersBtn" class="btn-secondary" type="button">
-            🔄 Обновить заказы
-          </button>
+          <div>
+            <h2>История и список заказов</h2>
+            <p style="font-size: 13px; color: var(--admin-muted); margin-top: 2px;">Просмотр истории по периодам и управление заказами</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button id="refreshOrdersBtn" class="btn-secondary" type="button">
+              🔄 Обновить
+            </button>
+            <button id="clearAllOrdersBtn" class="btn-danger" type="button" style="display: flex; align-items: center; gap: 6px;">
+              🗑️ Очистить все заказы
+            </button>
+          </div>
+        </div>
+
+        <!-- Фильтры истории по периодам -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+          <button class="cat-chip order-period-chip active" data-period="all" type="button">Все время</button>
+          <button class="cat-chip order-period-chip" data-period="today" type="button">Сегодня</button>
+          <button class="cat-chip order-period-chip" data-period="yesterday" type="button">Вчера</button>
+          <button class="cat-chip order-period-chip" data-period="week" type="button">За 7 дней</button>
+          <button class="cat-chip order-period-chip" data-period="month" type="button">Этот месяц</button>
         </div>
 
         <div class="admin-table-container">
           <table class="admin-table">
             <thead>
               <tr>
-                <th style="width: 80px;">Заказ</th>
+                <th style="width: 70px;">Заказ</th>
                 <th>Дата</th>
                 <th>Покупатель / Контакты</th>
                 <th>Состав заказа</th>
                 <th>Сумма</th>
                 <th>Статус</th>
+                <th style="text-align: right; width: 60px;">Удалить</th>
               </tr>
             </thead>
             <tbody id="adminOrdersTableBody">

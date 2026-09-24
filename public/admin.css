@@ -458,3 +458,30 @@ body {
 .hidden {
   display: none !important;
 }
+
+/* Фильтры периодов истории заказов */
+.order-period-chip {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.order-period-chip:hover {
+  color: var(--admin-text);
+  background: var(--admin-card-hover);
+  border-color: var(--admin-primary);
+}
+
+.order-period-chip.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--admin-primary);
+  border-color: var(--admin-primary);
+  font-weight: 700;
+}
