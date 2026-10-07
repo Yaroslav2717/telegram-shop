@@ -34,6 +34,7 @@ db.exec(`
     price REAL NOT NULL,
     category TEXT DEFAULT 'Общее',
     image_url TEXT,
+    flavors TEXT,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -49,6 +50,13 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// Миграция: убеждаемся, что колонка flavors существует
+try {
+  db.exec('ALTER TABLE products ADD COLUMN flavors TEXT;');
+} catch (e) {
+  // Колонка уже существует
+}
 
 // Инициализация настроек по умолчанию
 function getSetting(key, defaultValue = '') {
@@ -70,66 +78,76 @@ if (!getSetting('admin_password')) {
   setSetting('admin_password', 'admin123');
 }
 
-// Заполнение базы демо-товарами, если каталог пуст
+// Заполнение базы товарами Fizzy, если каталог пуст
 const productCount = db.prepare('SELECT COUNT(*) as count FROM products').get().count;
 if (productCount === 0) {
-  const demoProducts = [
+  const fizzyProducts = [
     {
-      title: 'Премиальный крафтовый набор «Noir Reserve»',
-      description: 'Эксклюзивная подборка для истинных ценителей. Включает подарочный бокс, аксессуары из натурального дерева и фирменную гравировку.',
-      price: 199,
-      category: 'Наборы',
-      image_url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'
+      title: 'Fizzy Smart 150K (15 in 1)',
+      description: 'Флагманский электронный испаритель Fizzy Smart на 150 000 затяжек. Умный дисплей, 15 вкусов в 1, регулировка мощности, крепость 5%.',
+      price: 115,
+      category: 'Fizzy 150K',
+      image_url: '/uploads/fizzy_smart_150k.png',
+      flavors: JSON.stringify([
+        'Strawberry Kiwi, Mixed Berry, Watermelon Bubblegum, Juicy Peach',
+        'Love 66, Strawberry Kiwi, Watermelon Blueberry, Black Ice Dragon Fruit Strawberry'
+      ])
     },
     {
-      title: 'Винтажный механический хронограф «Aero 1974»',
-      description: 'Сапфировое стекло, стальной корпус 41мм, японский мануфактурный калибр. Водонепроницаемость 10 ATM.',
-      price: 749,
-      category: 'Часы & Аксессуары',
-      image_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80'
+      title: 'Fizzy Prime Max 80K',
+      description: 'Яркая электронная сигарета Fizzy Prime Max на 80 000 затяжек с двойным сетчатым койлом Dual Mesh, насыщенным вкусом и дисплеем. Крепость 5%.',
+      price: 80,
+      category: 'Fizzy 80K',
+      image_url: '/uploads/fizzy_prime_max_80k.png',
+      flavors: JSON.stringify([
+        'Cola Ice',
+        'Blueberry Raspberry Ice'
+      ])
     },
     {
-      title: 'Кожаный дорожный несессер «Gentleman Traveler»',
-      description: 'Натуральная итальянская кожа ручной выделки. Вместительные отделения для гигиенических принадлежностей и аксессуаров.',
-      price: 249,
-      category: 'Кожаные изделия',
-      image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80'
+      title: 'Fizzy Max III 120K (6 in 1)',
+      description: 'Революционный вейп Fizzy Max 3 с поворотной системой переключения 6 вкусов в одном корпусе на 120 000 затяжек. Дисплей, Type-C, крепость 5%.',
+      price: 100,
+      category: 'Fizzy 120K',
+      image_url: '/uploads/fizzy_max_3_120k.png',
+      flavors: JSON.stringify([
+        'Strawberry Dragon Fruit, Red Bull, Raspberry Watermelon',
+        'Blueberry Raspberry, Triple Melon, Strawberry Ice'
+      ])
     },
     {
-      title: 'Коллекционная зажигалка «Titan Brass»',
-      description: 'Массивная латунная бензиновая зажигалка с винтажной текстурой и гравировкой. Ветроустойчивое пламя.',
-      price: 139,
-      category: 'Аксессуары',
-      image_url: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=800&q=80'
+      title: 'Fizzy Twins 50K (Dual Tank)',
+      description: 'Двухкамерный девайс Fizzy Twins на 50 000 затяжек: 2 независимых вкуса в одном стильном корпусе со слайдером-переключателем. Крепость 5%.',
+      price: 70,
+      category: 'Fizzy 50K',
+      image_url: '/uploads/fizzy_twins_50k.png',
+      flavors: JSON.stringify([
+        'Blueberry Coconut + Grape Ice',
+        'Raspberry Watermelon + Kiwi Passion Fruit Guava'
+      ])
     },
     {
-      title: 'Набор дегустационных бокалов «Glencairn Crystal»',
-      description: 'Кристально чистое стекло особой формы для полного раскрытия аромата благородных напитков. В наборе 2 шт.',
-      price: 159,
-      category: 'Бар & Посуда',
-      image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80'
-    },
-    {
-      title: 'Хьюмидор из кедра «Havana Classic»',
-      description: 'Внутренняя отделка из испанского кедра, точный аналоговый гигрометр, золоченая фурнитура. Вместимость до 25 шт.',
-      price: 399,
-      category: 'Наборы',
-      image_url: 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=800&q=80'
+      title: 'Fizzy X-Space 100K',
+      description: 'Космический дизайн Fizzy X-Space на 100 000 затяжек с цветным анимационным экраном, сверхплотным паром и сочными ароматами. Крепость 5%.',
+      price: 95,
+      category: 'Fizzy 100K',
+      image_url: '/uploads/fizzy_xspace_100k.png',
+      flavors: JSON.stringify([
+        'Strawberry Banana',
+        'Monster Mango'
+      ])
     }
   ];
 
   const insertStmt = db.prepare(`
-    INSERT INTO products (title, description, price, category, image_url)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO products (title, description, price, category, image_url, flavors)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
-  for (const prod of demoProducts) {
-    insertStmt.run(prod.title, prod.description, prod.price, prod.category, prod.image_url);
+  for (const prod of fizzyProducts) {
+    insertStmt.run(prod.title, prod.description, prod.price, prod.category, prod.image_url, prod.flavors);
   }
-  console.log(`[DB] Добавлено ${demoProducts.length} демонстрационных товаров (в злотых).`);
-} else {
-  // Конвертация существующих старых рублевых цен в злотые (если > 1000)
-  db.exec("UPDATE products SET price = ROUND(price / 25) WHERE price > 1000;");
+  console.log(`[DB] Добавлено ${fizzyProducts.length} товаров Fizzy.`);
 }
 
 // Активные сессии админов
@@ -254,7 +272,8 @@ startTelegramBotListener();
 function formatOrderForTelegram(order, items) {
   const itemsText = items.map((item, index) => {
     const lineTotal = (item.price * item.quantity).toLocaleString('pl-PL');
-    return `${index + 1}. <b>${escapeHtml(item.title)}</b>\n   └ ${item.quantity} шт. × ${item.price.toLocaleString('pl-PL')} zł = <b>${lineTotal} zł</b>`;
+    const flavorLine = item.flavor ? `\n   🍓 Вкус: <b>${escapeHtml(item.flavor)}</b>` : '';
+    return `${index + 1}. <b>${escapeHtml(item.title)}</b>${flavorLine}\n   └ ${item.quantity} шт. × ${item.price.toLocaleString('pl-PL')} zł = <b>${lineTotal} zł</b>`;
   }).join('\n');
 
   const formattedDate = new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' });
@@ -422,6 +441,7 @@ const server = http.createServer(async (req, res) => {
           orderItems.push({
             id: prod.id,
             title: prod.title,
+            flavor: item.flavor || '',
             price: prod.price,
             quantity: qty
           });
@@ -544,14 +564,14 @@ const server = http.createServer(async (req, res) => {
 
       // Создать новый товар
       if (method === 'POST' && pathname === '/api/admin/products') {
-        const { title, description, price, category, image_url, is_active } = await parseJsonBody(req);
+        const { title, description, price, category, image_url, flavors, is_active } = await parseJsonBody(req);
         if (!title || price === undefined) {
           return sendError(400, 'Название и цена обязательны');
         }
 
         const stmt = db.prepare(`
-          INSERT INTO products (title, description, price, category, image_url, is_active)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO products (title, description, price, category, image_url, flavors, is_active)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
         const info = stmt.run(
           title.trim(),
@@ -559,6 +579,7 @@ const server = http.createServer(async (req, res) => {
           parseFloat(price) || 0,
           (category || 'Общее').trim(),
           (image_url || '').trim(),
+          typeof flavors === 'string' ? flavors : JSON.stringify(flavors || []),
           is_active !== undefined ? (is_active ? 1 : 0) : 1
         );
 
@@ -568,11 +589,11 @@ const server = http.createServer(async (req, res) => {
       // Обновить товар
       if (method === 'PUT' && pathname.startsWith('/api/admin/products/')) {
         const id = parseInt(pathname.split('/')[4], 10);
-        const { title, description, price, category, image_url, is_active } = await parseJsonBody(req);
+        const { title, description, price, category, image_url, flavors, is_active } = await parseJsonBody(req);
 
         const stmt = db.prepare(`
           UPDATE products
-          SET title = ?, description = ?, price = ?, category = ?, image_url = ?, is_active = ?
+          SET title = ?, description = ?, price = ?, category = ?, image_url = ?, flavors = ?, is_active = ?
           WHERE id = ?
         `);
         stmt.run(
@@ -581,6 +602,7 @@ const server = http.createServer(async (req, res) => {
           parseFloat(price) || 0,
           (category || 'Общее').trim(),
           (image_url || '').trim(),
+          typeof flavors === 'string' ? flavors : JSON.stringify(flavors || []),
           is_active ? 1 : 0,
           id
         );
