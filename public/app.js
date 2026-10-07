@@ -13,7 +13,8 @@ const state = {
   activeCategory: 'Все',
   searchQuery: '',
   cart: JSON.parse(localStorage.getItem('catalog_cart') || '[]'),
-  selectedProductForModal: null
+  selectedProductForModal: null,
+  selectedFlavor: ''
 };
 
 // ====================================================
@@ -154,6 +155,22 @@ function renderCategoriesBar() {
   });
 }
 
+function parseFlavors(flavorsField) {
+  if (!flavorsField) return [];
+  if (Array.isArray(flavorsField)) return flavorsField;
+  if (typeof flavorsField === 'string') {
+    try {
+      const parsed = JSON.parse(flavorsField);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+    return flavorsField
+      .split(/[\r\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function renderProductGrid() {
   const grid = document.getElementById('catalogGrid');
   grid.innerHTML = '';
@@ -174,6 +191,20 @@ function renderProductGrid() {
 
     const fallbackImg = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80';
     const imageUrl = prod.image_url || fallbackImg;
+    const flavors = parseFlavors(prod.flavors);
+
+    let flavorsHtml = '';
+    if (flavors.length > 0) {
+      const previewChips = flavors.slice(0, 2).map(f => `<span class="flavor-chip-mini" title="${escapeHtml(f)}">🍓 ${escapeHtml(f)}</span>`).join('');
+      const moreCount = flavors.length - 2;
+      const moreChip = moreCount > 0 ? `<span class="flavor-chip-mini more">+${moreCount} вкус${moreCount === 1 ? '' : 'а'}</span>` : '';
+      flavorsHtml = `
+        <div class="product-flavors-preview">
+          ${previewChips}
+          ${moreChip}
+        </div>
+      `;
+    }
 
     card.innerHTML = `
       <div class="product-image-wrap" data-id="${prod.id}">
@@ -183,10 +214,11 @@ function renderProductGrid() {
       <div class="product-info">
         <h3 class="product-title" data-id="${prod.id}">${escapeHtml(prod.title)}</h3>
         <p class="product-description">${escapeHtml(prod.description || '')}</p>
+        ${flavorsHtml}
         <div class="product-bottom">
           <div class="product-price">${prod.price.toLocaleString('pl-PL')} <span>zł</span></div>
           <button class="add-cart-btn" data-id="${prod.id}" type="button">
-            🛒 В корзину
+            ${flavors.length > 1 ? 'Выбрать вкус' : '🛒 В корзину'}
           </button>
         </div>
       </div>
@@ -204,13 +236,18 @@ function renderProductGrid() {
     const addBtn = card.querySelector('.add-cart-btn');
     addBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      addToCart(prod);
-      addBtn.classList.add('added');
-      addBtn.textContent = '✓ В корзине';
-      setTimeout(() => {
-        addBtn.classList.remove('added');
-        addBtn.innerHTML = '🛒 В корзину';
-      }, 1000);
+      if (flavors.length > 1) {
+        // Открываем модальное окно для выбора вкуса
+        openProductModal(prod);
+      } else {
+        addToCart(prod, flavors[0] || '');
+        addBtn.classList.add('added');
+        addBtn.textContent = '✓ В корзине';
+        setTimeout(() => {
+          addBtn.classList.remove('added');
+          addBtn.innerHTML = '🛒 В корзину';
+        }, 1000);
+      }
     });
 
     grid.appendChild(card);
@@ -228,6 +265,8 @@ function openProductModal(product) {
   const title = document.getElementById('modalProdTitle');
   const desc = document.getElementById('modalProdDesc');
   const price = document.getElementById('modalProdPrice');
+  const flavorsSection = document.getElementById('modalFlavorsSection');
+  const flavorsList = document.getElementById('modalFlavorsList');
 
   img.src = product.image_url || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80';
   img.alt = product.title;
@@ -235,6 +274,31 @@ function openProductModal(product) {
   title.textContent = product.title;
   desc.textContent = product.description || 'Описание отсутствует.';
   price.textContent = `${product.price.toLocaleString('pl-PL')} zł`;
+
+  // Вкусы товара
+  const flavors = parseFlavors(product.flavors);
+  if (flavors.length > 0) {
+    state.selectedFlavor = flavors[0];
+    if (flavorsSection) flavorsSection.style.display = 'block';
+    if (flavorsList) {
+      flavorsList.innerHTML = '';
+      flavors.forEach((fl, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `flavor-select-btn ${idx === 0 ? 'selected' : ''}`;
+        btn.innerHTML = `<span>🍓</span> <span>${escapeHtml(fl)}</span>`;
+        btn.addEventListener('click', () => {
+          flavorsList.querySelectorAll('.flavor-select-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          state.selectedFlavor = fl;
+        });
+        flavorsList.appendChild(btn);
+      });
+    }
+  } else {
+    state.selectedFlavor = '';
+    if (flavorsSection) flavorsSection.style.display = 'none';
+  }
 
   overlay.classList.add('open');
 }
@@ -246,38 +310,45 @@ function closeProductModal() {
 // ====================================================
 // ЛОГИКА КОРЗИНЫ
 // ====================================================
-function addToCart(product) {
-  const existing = state.cart.find(i => i.id === product.id);
+function addToCart(product, chosenFlavor) {
+  const flavor = chosenFlavor !== undefined ? chosenFlavor : (state.selectedFlavor || '');
+  const cartKey = `${product.id}_${flavor}`;
+
+  const existing = state.cart.find(i => (i.cartKey === cartKey) || (!i.cartKey && i.id === product.id && (i.flavor || '') === flavor));
   if (existing) {
     existing.quantity += 1;
+    existing.cartKey = cartKey;
   } else {
     state.cart.push({
+      cartKey: cartKey,
       id: product.id,
       title: product.title,
       price: product.price,
       image_url: product.image_url,
+      flavor: flavor,
       quantity: 1
     });
   }
   saveCart();
   renderCart();
-  showToast(`«${product.title}» добавлен в корзину!`, 'success');
+  const flavorNotice = flavor ? ` (${flavor})` : '';
+  showToast(`«${product.title}»${flavorNotice} добавлен в корзину!`, 'success');
 }
 
-function updateCartQuantity(id, delta) {
-  const item = state.cart.find(i => i.id === id);
+function updateCartQuantity(cartKey, delta) {
+  const item = state.cart.find(i => (i.cartKey === cartKey || String(i.id) === String(cartKey)));
   if (!item) return;
 
   item.quantity += delta;
   if (item.quantity <= 0) {
-    state.cart = state.cart.filter(i => i.id !== id);
+    state.cart = state.cart.filter(i => (i.cartKey !== cartKey && String(i.id) !== String(cartKey)));
   }
   saveCart();
   renderCart();
 }
 
-function removeFromCart(id) {
-  state.cart = state.cart.filter(i => i.id !== id);
+function removeFromCart(cartKey) {
+  state.cart = state.cart.filter(i => (i.cartKey !== cartKey && String(i.id) !== String(cartKey)));
   saveCart();
   renderCart();
   showToast('Товар удален из корзины', 'info');
@@ -322,24 +393,27 @@ function renderCart() {
     el.className = 'cart-item';
     const fallback = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80';
     const imgUrl = item.image_url || fallback;
+    const itemKey = item.cartKey || `${item.id}_${item.flavor || ''}`;
+    const flavorBadge = item.flavor ? `<div class="cart-item-flavor">🍓 Вкус: <b>${escapeHtml(item.flavor)}</b></div>` : '';
 
     el.innerHTML = `
       <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.title)}" class="cart-item-img">
       <div class="cart-item-details">
         <div class="cart-item-title">${escapeHtml(item.title)}</div>
+        ${flavorBadge}
         <div class="cart-item-price">${(item.price * item.quantity).toLocaleString('pl-PL')} zł</div>
         <div class="cart-item-controls">
-          <button class="qty-btn" type="button" data-action="minus" data-id="${item.id}">−</button>
+          <button class="qty-btn" type="button" data-action="minus" data-key="${itemKey}">−</button>
           <span class="qty-val">${item.quantity}</span>
-          <button class="qty-btn" type="button" data-action="plus" data-id="${item.id}">+</button>
+          <button class="qty-btn" type="button" data-action="plus" data-key="${itemKey}">+</button>
         </div>
       </div>
-      <button class="cart-item-remove" type="button" data-id="${item.id}" title="Удалить">🗑️</button>
+      <button class="cart-item-remove" type="button" data-key="${itemKey}" title="Удалить">🗑️</button>
     `;
 
-    el.querySelector('[data-action="minus"]').addEventListener('click', () => updateCartQuantity(item.id, -1));
-    el.querySelector('[data-action="plus"]').addEventListener('click', () => updateCartQuantity(item.id, 1));
-    el.querySelector('.cart-item-remove').addEventListener('click', () => removeFromCart(item.id));
+    el.querySelector('[data-action="minus"]').addEventListener('click', () => updateCartQuantity(itemKey, -1));
+    el.querySelector('[data-action="plus"]').addEventListener('click', () => updateCartQuantity(itemKey, 1));
+    el.querySelector('.cart-item-remove').addEventListener('click', () => removeFromCart(itemKey));
 
     itemsContainer.appendChild(el);
   });
@@ -398,7 +472,11 @@ async function handleCheckoutSubmit(e) {
       customer_name: name,
       customer_phone: phone,
       customer_comment: comment,
-      items: state.cart.map(i => ({ id: i.id, quantity: i.quantity }))
+      items: state.cart.map(i => ({
+        id: i.id,
+        quantity: i.quantity,
+        flavor: i.flavor || ''
+      }))
     };
 
     const res = await fetch('/api/orders', {
@@ -471,7 +549,7 @@ function initEventListeners() {
   });
   document.getElementById('modalAddToCartBtn').addEventListener('click', () => {
     if (state.selectedProductForModal) {
-      addToCart(state.selectedProductForModal);
+      addToCart(state.selectedProductForModal, state.selectedFlavor);
       closeProductModal();
     }
   });

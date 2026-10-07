@@ -202,11 +202,22 @@ function renderProductsTable(products) {
     const fallback = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=200&q=80';
     const imgUrl = p.image_url || fallback;
 
+    let flavorsSummary = '';
+    if (p.flavors) {
+      try {
+        const flList = typeof p.flavors === 'string' ? JSON.parse(p.flavors) : p.flavors;
+        if (Array.isArray(flList) && flList.length > 0) {
+          flavorsSummary = `<div style="font-size: 11px; color: #38bdf8; margin-top: 3px;">🍓 Вкусов: ${flList.length} (${escapeHtml(flList.slice(0, 2).join(', '))}${flList.length > 2 ? '...' : ''})</div>`;
+        }
+      } catch (e) {}
+    }
+
     tr.innerHTML = `
       <td><img src="${escapeHtml(imgUrl)}" alt="" class="table-thumb"></td>
       <td>
         <div style="font-weight: 700; color: var(--admin-text);">${escapeHtml(p.title)}</div>
         <div style="font-size: 12px; color: var(--admin-muted);">${escapeHtml((p.description || '').substring(0, 60))}...</div>
+        ${flavorsSummary}
       </td>
       <td><span class="badge" style="background: rgba(255,255,255,0.06);">${escapeHtml(p.category || 'Общее')}</span></td>
       <td style="font-weight: 700;">${p.price.toLocaleString('pl-PL')} zł</td>
@@ -337,12 +348,18 @@ function initProductForm() {
     saveBtn.disabled = true;
 
     const id = document.getElementById('prodFormId').value;
+    const rawFlavors = (document.getElementById('prodFlavors').value || '').trim();
+    const flavorsArray = rawFlavors
+      ? rawFlavors.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean)
+      : [];
+
     const payload = {
       title: document.getElementById('prodTitle').value.trim(),
       category: document.getElementById('prodCategory').value.trim() || 'Общее',
       price: parseFloat(document.getElementById('prodPrice').value) || 0,
       description: document.getElementById('prodDescription').value.trim(),
       image_url: urlInput.value.trim(),
+      flavors: flavorsArray,
       is_active: document.getElementById('prodIsActive').checked
     };
 
@@ -389,6 +406,21 @@ function openEditProductModal(product) {
   document.getElementById('prodDescription').value = product.description || '';
   document.getElementById('prodImageUrl').value = product.image_url || '';
   document.getElementById('prodIsActive').checked = product.is_active === 1;
+
+  let flavorsText = '';
+  if (product.flavors) {
+    try {
+      const parsed = typeof product.flavors === 'string' ? JSON.parse(product.flavors) : product.flavors;
+      if (Array.isArray(parsed)) {
+        flavorsText = parsed.join('\n');
+      } else {
+        flavorsText = String(product.flavors);
+      }
+    } catch (e) {
+      flavorsText = String(product.flavors);
+    }
+  }
+  document.getElementById('prodFlavors').value = flavorsText;
 
   const preview = document.getElementById('imagePreview');
   if (product.image_url) {

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Каталог Премиум Товаров 18+</title>
+  <title>FIZZY VAPE STORE | Одноразовые электронные испарители 18+</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💨</text></svg>">
   <!-- Telegram WebApp SDK для запуска магазина внутри Telegram -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -20,7 +20,7 @@
         <div class="age-gate-badge">18+</div>
         <h2 class="age-gate-title">Вам есть 18 лет?</h2>
         <p class="age-gate-desc">
-          Данный сайт содержит информацию и товары, предназначенные исключительно для совершеннолетних пользователей. Подтвердите, что вам исполнилось 18 лет, чтобы получить доступ к каталогу.
+          Данный сайт содержит информацию об электронных никотиновых испарителях, предназначенных исключительно для совершеннолетних пользователей. Подтвердите ваш возраст для доступа к каталогу.
         </p>
         <div class="age-gate-buttons">
           <button id="btnAgeYes" class="age-btn-yes" type="button">
@@ -37,7 +37,7 @@
         <div class="age-gate-badge" style="border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.2);">⛔</div>
         <h2 class="age-gate-title" style="color: #ef4444;">Доступ запрещен</h2>
         <p class="age-gate-desc">
-          К сожалению, вы не можете просматривать каталог. Продажа и демонстрация товаров лицам младше 18 лет строго запрещены.
+          К сожалению, вы не можете просматривать каталог. Продажа никотиносодержащей продукции лицам младше 18 лет строго запрещена.
         </p>
         <div class="age-gate-buttons">
           <button id="btnAgeRetry" class="age-btn-no" style="border-color: var(--accent); color: var(--accent);" type="button">
@@ -52,14 +52,14 @@
   <header class="header">
     <div class="header-container">
       <a href="/" class="logo">
-        <span>EXCLUSIVE</span>
+        <span>FIZZY STORE</span>
         <span class="logo-badge">18+</span>
       </a>
 
       <!-- Поиск товаров -->
       <div class="header-search">
         <span class="header-search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Поиск по каталогу...">
+        <input type="text" id="searchInput" placeholder="Поиск вкуса или модели (50K, 80K, 150K)...">
       </div>
 
       <!-- Кнопки действий -->
@@ -79,9 +79,9 @@
   <!-- БАННЕР / HERO -->
   <section class="hero">
     <div class="hero-content">
-      <div class="hero-tag">🔒 Только для совершеннолетних</div>
-      <h1>Каталог эксклюзивных товаров</h1>
-      <p>Оригинальные аксессуары, подарочные сеты и коллекционные вещи с быстрой доставкой и подтверждением заказа через Telegram</p>
+      <div class="hero-tag">🔒 100% ОРИГИНАЛЬНЫЕ FIZZY | 18+</div>
+      <h1>Каталог одноразок FIZZY VAPE</h1>
+      <p>Оригинальные электронные испарители Fizzy 50K, 80K, 100K, 120K, 150K. Выбирайте любимый вкус и оформляйте заказ в Telegram!</p>
     </div>
   </section>
 
@@ -181,8 +181,16 @@
         <img id="modalProdImage" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
 
-      <h2 id="modalProdTitle" style="font-size: 22px; margin-bottom: 12px; line-height: 1.3;">Название товара</h2>
-      <p id="modalProdDesc" style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6;">Описание товара...</p>
+      <h2 id="modalProdTitle" style="font-size: 22px; margin-bottom: 8px; line-height: 1.3;">Название товара</h2>
+      <p id="modalProdDesc" style="color: var(--text-muted); font-size: 14px; margin-bottom: 18px; line-height: 1.6;">Описание товара...</p>
+
+      <!-- Блок выбора вкуса -->
+      <div id="modalFlavorsSection" style="margin-bottom: 22px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+          🍓 Доступные вкусы:
+        </label>
+        <div id="modalFlavorsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
 
       <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border);">
         <div id="modalProdPrice" style="font-size: 24px; font-weight: 800; color: var(--text-main);">0 zł</div>
